@@ -6,7 +6,7 @@ export const useRackData = (autoRefreshInterval: number = 5000) => {
   const [racks, setRacks] = useState<Rack[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<number | null>(null);
 
   const loadRacks = useCallback(async () => {
     try {
@@ -23,6 +23,7 @@ export const useRackData = (autoRefreshInterval: number = 5000) => {
 
   // Auto refresh
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRacks();
     intervalRef.current = setInterval(loadRacks, autoRefreshInterval);
     return () => {

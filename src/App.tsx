@@ -5,7 +5,7 @@ import type { OperationMode } from "./types";
 import "./App.css";
 
 const App: React.FC = () => {
-  const { racks, isLoading, error, refresh } = useRackData(5000);
+  const { racks, isLoading, refresh } = useRackData(5000);
   const [durationMinutes, setDurationMinutes] = useState<number>(30);
   const [operationMode, setOperationMode] =
     useState<OperationMode>("CONTINUOUS");
@@ -19,9 +19,7 @@ const App: React.FC = () => {
     isActive: boolean;
     remainingSeconds?: number;
   } | null>(null);
-  const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(
-    null,
-  );
+  const [timerInterval, setTimerInterval] = useState<number | null>(null);
 
   // Tüm rack'lerin charge_status'u ne durumda?
   const allRacksChargeStatus =
