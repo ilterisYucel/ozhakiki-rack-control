@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: .
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  backend:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: node server.js
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
