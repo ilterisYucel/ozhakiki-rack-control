@@ -1,14 +1,29 @@
 # Build stage
 FROM node:20-alpine AS builder
+
 WORKDIR /app
-COPY ../package*.json ./
-RUN npm ci --only=production
-COPY ../ .
+
+# package.json ve package-lock.json'u kopyala (root'tan)
+COPY package*.json ./
+
+# Bağımlılıkları yükle
+RUN npm ci --omit=dev || npm install --omit=dev
+
+# Geri kalan tüm dosyaları kopyala
+COPY . .
+
+# Build al
 RUN npm run build
 
 # Production stage
 FROM nginx:alpine
+
+# Nginx konfigürasyonunu kopyala
+COPY deployment/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Build edilen dosyaları kopyala (dist klasörü)
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY ./nginx/nginx.conf /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]
