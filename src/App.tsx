@@ -1,11 +1,18 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useRackData } from "./hooks/useRackData";
 import { api } from "./services/api";
 import type { OperationMode } from "./types";
 import "./App.css";
+import { useSystemHistoricalData } from "./hooks/useHistoricalData";
+import {
+  MultiLineChart,
+  type ChartDataPoint,
+} from "./components/MultiLineChart";
+import { PowerFlowAnimation } from "./components/animation/PowerFlowAnimation";
 
 const App: React.FC = () => {
   const { racks, isLoading, refresh } = useRackData(5000);
+  const { systemData } = useSystemHistoricalData(10000);
   const [durationMinutes, setDurationMinutes] = useState<number>(30);
   const [operationMode, setOperationMode] =
     useState<OperationMode>("CONTINUOUS");
@@ -33,6 +40,14 @@ const App: React.FC = () => {
   const isMixedStatus =
     !allRacksChargeStatus && !allRacksDischargeStatus && !allRacksIdleStatus;
 
+  const getSystemStatus = (): "Charge" | "Discharge" | "Idle" => {
+    if (allRacksChargeStatus) return "Charge";
+    if (allRacksDischargeStatus) return "Discharge";
+    return "Idle"; // Idle veya karışık durumda Idle
+  };
+
+  const systemStatus = getSystemStatus();
+
   // Butonların aktiflik durumu
   const isChargeDisabled =
     isSending ||
@@ -43,6 +58,14 @@ const App: React.FC = () => {
     allRacksDischargeStatus ||
     (allRacksChargeStatus && !isMixedStatus);
   const isIdleDisabled = isSending || allRacksIdleStatus;
+
+  const chartData: ChartDataPoint[] = useMemo(() => {
+    return systemData.map((point) => ({
+      timestamp: point.timestamp,
+      "Sistem Voltajı (mV)": point.voltage ?? 0,
+      "Sistem Akımı (A)": point.current ?? 0,
+    }));
+  }, [systemData]);
 
   // Timer temizleme
   const clearTimer = useCallback(() => {
@@ -68,7 +91,7 @@ const App: React.FC = () => {
   const startTimer = useCallback(
     (durationMinutes: number) => {
       clearTimer();
-      const remainingSeconds = durationMinutes * 60;
+      const remainingSeconds = durationMinutes;
       setActiveCommand({ isActive: true, remainingSeconds });
 
       const interval = setInterval(() => {
@@ -93,7 +116,7 @@ const App: React.FC = () => {
     async (chargeStatus: "Charge" | "Discharge") => {
       setIsSending(true);
       const durationSeconds =
-        operationMode === "TIMER" ? durationMinutes * 60 : 31536000; // 1 yıl
+        operationMode === "TIMER" ? durationMinutes : 31536000; // 1 yıl
 
       try {
         await api.sendPowerCommand(chargeStatus, powerKw, durationSeconds);
@@ -102,7 +125,7 @@ const App: React.FC = () => {
           type: "success",
           text:
             operationMode === "TIMER"
-              ? `Tüm rack'ler ${chargeStatus === "Charge" ? "şarja" : "deşarja"} başladı! ${durationMinutes} dakika sonra otomatik duracak.`
+              ? `Tüm rack'ler ${chargeStatus === "Charge" ? "şarja" : "deşarja"} başladı! ${durationMinutes} saniye sonra otomatik duracak.`
               : `Tüm rack'ler ${chargeStatus === "Charge" ? "şarja" : "deşarja"} başladı! (Sürekli mod)`,
         });
 
@@ -165,16 +188,22 @@ const App: React.FC = () => {
         <h1>🔋 Battery Rack Controller</h1>
       </div>
 
-      {/* Timer Göstergesi */}
-      {activeCommand?.isActive &&
-        activeCommand.remainingSeconds !== undefined && (
-          <div className="timer-display">
-            <div className="time">
-              {formatTime(activeCommand.remainingSeconds)}
-            </div>
-            <div style={{ fontSize: "12px", marginTop: "4px" }}>Kalan süre</div>
-          </div>
-        )}
+      <div className="charts-grid">
+        <div className="chart-container">
+          <PowerFlowAnimation flowDirection={systemStatus} />
+        </div>
+
+        {/* Sağ sütun - Sistem Grafiği */}
+        <div className="chart-container">
+          <MultiLineChart
+            data={chartData}
+            title="📊 Sistem Ölçümleri"
+            yAxisLabel="Değer"
+            height={350}
+            colors={["#3b82f6", "#f59e0b"]}
+          />
+        </div>
+      </div>
 
       <div className="main-layout">
         {/* Rack Grid */}
@@ -265,7 +294,7 @@ const App: React.FC = () => {
           {/* Timer Süresi */}
           {operationMode === "TIMER" && (
             <div className="form-group">
-              <label>⏱️ Süre (Dakika)</label>
+              <label>⏱️ Süre (Saniye)</label>
               <input
                 type="number"
                 value={durationMinutes}
@@ -334,6 +363,18 @@ const App: React.FC = () => {
               : "Sürekli modda DURDUR butonu ile durdur."}
             {isMixedStatus && " ⚠️ Rack'ler farklı durumlarda!"}
           </div>
+          {/* Timer Göstergesi */}
+          {activeCommand?.isActive &&
+            activeCommand.remainingSeconds !== undefined && (
+              <div className="timer-display">
+                <div className="time">
+                  {formatTime(activeCommand.remainingSeconds)}
+                </div>
+                <div style={{ fontSize: "12px", marginTop: "4px" }}>
+                  Kalan süre
+                </div>
+              </div>
+            )}
         </div>
       </div>
     </div>

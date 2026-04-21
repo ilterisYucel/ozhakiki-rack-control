@@ -260,6 +260,7 @@ body {
   padding: 16px;
   background: #1f1f2e;
   border-radius: 12px;
+  margin-top: 20px;
   margin-bottom: 20px;
   border: 1px solid #3b82f6;
 }
@@ -367,5 +368,58 @@ body {
   
   .btn {
     width: 100%;
+  }
+}
+
+/* ... mevcut CSS ... */
+
+/* === YENİ: Charts Grid (2 sütun) === */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.chart-container {
+  background: #1f1f2e;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Placeholder (Animasyon alanı) */
+.chart-placeholder {
+  background: #1f1f2e;
+  border-radius: 12px;
+  min-height: 350px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #2a2a3a;
+}
+
+.placeholder-content {
+  text-align: center;
+  color: #6b7280;
+}
+
+.placeholder-content p {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.placeholder-content small {
+  font-size: 12px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .chart-placeholder {
+    min-height: 200px;
   }
 }

@@ -24,3 +24,22 @@ export interface CommandHistory {
 }
 
 export type OperationMode = "TIMER" | "CONTINUOUS";
+
+// Tarihsel veri için (time-series)
+export interface HistoricalDataPoint {
+  timestamp: string;
+  value: number;
+  rackId: number;
+  rackName: string;
+}
+
+export interface HistoricalData {
+  voltage: HistoricalDataPoint[];
+  current: HistoricalDataPoint[];
+}
+
+export interface SystemDataPoint {
+  timestamp: string;
+  voltage: number;
+  current: number;
+}
