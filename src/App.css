@@ -20,13 +20,12 @@ body {
 /* Header */
 .header {
   text-align: center;
-  margin-bottom: 28px;
 }
 
 .header h1 {
   font-size: 24px;
-  color: #3b82f6;
-  margin-bottom: 8px;
+  color: #e5e7eb;
+  margin-left: -32px;
 }
 
 .header p {
@@ -422,4 +421,234 @@ body {
   .chart-placeholder {
     min-height: 200px;
   }
+}
+
+/* ============================================
+   LOGIN & AUTH STYLES
+   ============================================ */
+
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+}
+
+.login-card {
+  background: #1f1f2e;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-header h1 {
+  font-size: 24px;
+  color: #3b82f6;
+  margin-bottom: 8px;
+}
+
+.login-header p {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.login-form .form-group {
+  margin-bottom: 20px;
+}
+
+.login-form label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #e5e7eb;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 12px 16px;
+  background: #2a2a3a;
+  border: 1px solid #3a3a4a;
+  border-radius: 10px;
+  color: #e5e7eb;
+  font-size: 14px;
+}
+
+.login-form input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.btn-login {
+  width: 100%;
+  padding: 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-login:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.btn-login:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.login-info {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #2a2a3a;
+  text-align: center;
+}
+
+.login-info p {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.demo-users {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demo-user {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Logout Container */
+.logout-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #1f1f2e;
+  border-radius: 12px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e5e7eb;
+}
+
+.user-role {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.role-admin {
+  background: #8b5cf620;
+  color: #a78bfa;
+  border: 1px solid #8b5cf6;
+}
+
+.role-teknik {
+  background: #3b82f620;
+  color: #60a5fa;
+  border: 1px solid #3b82f6;
+}
+
+.btn-logout {
+  padding: 6px 14px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  background: #dc2626;
+}
+
+/* Admin Panel Styles */
+.admin-panel {
+  margin-top: 20px;
+  padding: 4px;
+  background: transparent;
+  border-radius: 12px;
+}
+
+.admin-select {
+  width: 100%;
+  padding: 10px 12px;
+  background: #2a2a3a;
+  border: 1px solid #3a3a4a;
+  border-radius: 8px;
+  color: #e5e7eb;
+  font-size: 13px;
+}
+
+.admin-input-group {
+  display: flex;
+  gap: 12px;
+}
+
+.admin-input-group input {
+  flex: 1;
+  padding: 10px 12px;
+  background: #2a2a3a;
+  border: 1px solid #3a3a4a;
+  border-radius: 8px;
+  color: #e5e7eb;
+}
+
+.btn-admin {
+  padding: 10px 16px;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-admin:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.btn-admin:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Badge renkleri için ek */
+.badge-green {
+  background: #10b981;
+  color: white;
 }

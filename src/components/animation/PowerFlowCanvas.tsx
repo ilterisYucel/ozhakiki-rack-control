@@ -32,7 +32,7 @@ export const PowerFlowCanvas: React.FC<PowerFlowCanvasProps> = ({
 
   // Şehir akımı (sağ) - çemberler
   const gridX = 480;
-  const gridY = 100;
+  const gridY = 130;
   const gridRadius = 40;
 
   // Parçacık oluştur - useCallback ile
@@ -151,17 +151,17 @@ export const PowerFlowCanvas: React.FC<PowerFlowCanvasProps> = ({
       // === 4. BAĞLANTI KABLOLARI ===
       ctx.beginPath();
       ctx.moveTo(
-        batteryStartX + batteryCols * (batteryWidth + batteryGap) + 20,
-        120,
+        batteryStartX + batteryCols * (batteryWidth + batteryGap) + 10,
+        130,
       );
-      ctx.lineTo(pcsX - 10, 120);
+      ctx.lineTo(pcsX - 10, 130);
       ctx.strokeStyle = "#4a4a6a";
       ctx.lineWidth = 4;
       ctx.stroke();
 
       ctx.beginPath();
       ctx.moveTo(pcsX + pcsWidth + 10, 130);
-      ctx.lineTo(gridX - gridRadius - 5, 130);
+      ctx.lineTo(gridX - gridRadius - 20, 130);
       ctx.stroke();
 
       // === 5. AKIŞ PARÇACIKLARI ===
@@ -180,7 +180,7 @@ export const PowerFlowCanvas: React.FC<PowerFlowCanvasProps> = ({
             y = 130;
           } else {
             x = batteryStartX + 80 + progress * (gridX - batteryStartX - 80);
-            y = 120;
+            y = 130;
           }
 
           ctx.beginPath();

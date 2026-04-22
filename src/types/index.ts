@@ -1,3 +1,10 @@
+export interface User {
+  id: number;
+  username: string;
+  role: "admin" | "teknik";
+  name: string;
+}
+
 export interface Rack {
   id: number;
   name: string;
@@ -42,4 +49,21 @@ export interface SystemDataPoint {
   timestamp: string;
   voltage: number;
   current: number;
+}
+
+export interface SetPowerRequest {
+  charge_status: "Charge" | "Discharge" | "Idle";
+  power_kw: number;
+  duration_seconds: number;
+  rack_id?: number;
+}
+
+export interface SetStatusRequest {
+  status: "online" | "offline";
+  rack_id?: number;
+}
+
+export interface SetSOCRequest {
+  soc: number;
+  rack_id?: number;
 }

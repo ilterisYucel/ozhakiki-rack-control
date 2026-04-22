@@ -1,31 +1,17 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
-import type { SystemDataPoint } from "../types";
 
-export const useSystemHistoricalData = (refreshInterval: number = 10000) => {
-  const [systemData, setSystemData] = useState<SystemDataPoint[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const intervalRef = useRef<number | null>(null);
+export const historicalKeys = {
+  all: ["historical"] as const,
+  system: () => [...historicalKeys.all, "system"] as const,
+};
 
-  const loadSystemData = useCallback(async () => {
-    try {
-      const data = await api.getSystemHistoricalData(200);
-      setSystemData(data);
-    } catch (err) {
-      console.error("Error loading system historical data:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadSystemData();
-    intervalRef.current = setInterval(loadSystemData, refreshInterval);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [loadSystemData, refreshInterval]);
-
-  return { systemData, isLoading, refresh: loadSystemData };
+// Sistem tarihsel verisi
+export const useSystemHistorical = (limit: number = 200) => {
+  return useQuery({
+    queryKey: [...historicalKeys.system(), limit],
+    queryFn: () => api.getSystemHistoricalData(limit),
+    staleTime: 10000,
+    refetchInterval: 10000,
+  });
 };

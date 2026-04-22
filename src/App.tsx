@@ -1,23 +1,30 @@
 import React, { useState, useCallback, useMemo } from "react";
-import { useRackData } from "./hooks/useRackData";
-import { api } from "./services/api";
-import type { OperationMode } from "./types";
-import "./App.css";
-import { useSystemHistoricalData } from "./hooks/useHistoricalData";
+import { useRacks, useSetPower } from "./hooks/useRacks";
+import { useSystemHistorical } from "./hooks/useHistoricalData";
+import { useAuth } from "./stores/AuthStore";
+import { Login } from "./components/auth/Login";
+import { LogoutButton } from "./components/auth/LogoutButton";
+import { AdminPanel } from "./components/admin/AdminPanel";
 import {
   MultiLineChart,
   type ChartDataPoint,
 } from "./components/MultiLineChart";
 import { PowerFlowAnimation } from "./components/animation/PowerFlowAnimation";
+import type { OperationMode, Rack } from "./types";
+import "./App.css";
 
-const App: React.FC = () => {
-  const { racks, isLoading, refresh } = useRackData(5000);
-  const { systemData } = useSystemHistoricalData(10000);
-  const [durationMinutes, setDurationMinutes] = useState<number>(30);
+const AppContent: React.FC = () => {
+  const { isAdmin, isAuthenticated } = useAuth();
+
+  // DOĞRU HOOK'LAR - useRacks ve useSystemHistorical
+  const { data: racks = [], isLoading, refetch: refreshRacks } = useRacks();
+  const { data: systemData = [] } = useSystemHistorical(100);
+  const { mutate: setPower, isPending: isPowerSending } = useSetPower();
+
+  const [durationSeconds, setDurationSeconds] = useState<number>(30);
   const [operationMode, setOperationMode] =
     useState<OperationMode>("CONTINUOUS");
   const [powerKw, setPowerKw] = useState<number>(50);
-  const [isSending, setIsSending] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error" | "info";
     text: string;
@@ -30,34 +37,32 @@ const App: React.FC = () => {
 
   // Tüm rack'lerin charge_status'u ne durumda?
   const allRacksChargeStatus =
-    racks.length > 0 ? racks.every((r) => r.charge_status === "Charge") : false;
+    racks.length > 0
+      ? racks.every((r: Rack) => r.charge_status === "Charge")
+      : false;
   const allRacksDischargeStatus =
     racks.length > 0
-      ? racks.every((r) => r.charge_status === "Discharge")
+      ? racks.every((r: Rack) => r.charge_status === "Discharge")
       : false;
   const allRacksIdleStatus =
-    racks.length > 0 ? racks.every((r) => r.charge_status === "Idle") : false;
+    racks.length > 0
+      ? racks.every((r: Rack) => r.charge_status === "Idle")
+      : false;
   const isMixedStatus =
     !allRacksChargeStatus && !allRacksDischargeStatus && !allRacksIdleStatus;
 
   const getSystemStatus = (): "Charge" | "Discharge" | "Idle" => {
     if (allRacksChargeStatus) return "Charge";
     if (allRacksDischargeStatus) return "Discharge";
-    return "Idle"; // Idle veya karışık durumda Idle
+    return "Idle";
   };
 
   const systemStatus = getSystemStatus();
 
   // Butonların aktiflik durumu
-  const isChargeDisabled =
-    isSending ||
-    allRacksChargeStatus ||
-    (allRacksDischargeStatus && !isMixedStatus);
-  const isDischargeDisabled =
-    isSending ||
-    allRacksDischargeStatus ||
-    (allRacksChargeStatus && !isMixedStatus);
-  const isIdleDisabled = isSending || allRacksIdleStatus;
+  const isChargeDisabled = isPowerSending || allRacksChargeStatus;
+  const isDischargeDisabled = isPowerSending || allRacksDischargeStatus;
+  const isIdleDisabled = isPowerSending || allRacksIdleStatus;
 
   const chartData: ChartDataPoint[] = useMemo(() => {
     return systemData.map((point) => ({
@@ -77,22 +82,23 @@ const App: React.FC = () => {
   }, [timerInterval]);
 
   // Idle komutu (timer bitince)
-  const sendIdleCommand = useCallback(async () => {
-    try {
-      await api.sendPowerCommand("Idle", 0, 0);
-      setActiveCommand(null);
-      refresh();
-    } catch (err) {
-      console.error("Idle command failed:", err);
-    }
-  }, [refresh]);
+  const sendIdleCommand = useCallback(() => {
+    setPower(
+      { chargeStatus: "Idle", powerKw: 0, durationSeconds: 0 },
+      {
+        onSuccess: () => {
+          setActiveCommand(null);
+          refreshRacks();
+        },
+      },
+    );
+  }, [setPower, refreshRacks]);
 
   // Timer başlat
   const startTimer = useCallback(
-    (durationMinutes: number) => {
+    (durationSeconds: number) => {
       clearTimer();
-      const remainingSeconds = durationMinutes;
-      setActiveCommand({ isActive: true, remainingSeconds });
+      setActiveCommand({ isActive: true, remainingSeconds: durationSeconds });
 
       const interval = setInterval(() => {
         setActiveCommand((prev) => {
@@ -113,58 +119,67 @@ const App: React.FC = () => {
 
   // Power komutu gönder
   const sendPowerCommand = useCallback(
-    async (chargeStatus: "Charge" | "Discharge") => {
-      setIsSending(true);
-      const durationSeconds =
-        operationMode === "TIMER" ? durationMinutes : 31536000; // 1 yıl
+    (chargeStatus: "Charge" | "Discharge") => {
+      const finalDurationSeconds =
+        operationMode === "TIMER" ? durationSeconds : 31536000; // 1 yıl
 
-      try {
-        await api.sendPowerCommand(chargeStatus, powerKw, durationSeconds);
+      setPower(
+        { chargeStatus, powerKw, durationSeconds: finalDurationSeconds },
+        {
+          onSuccess: () => {
+            setMessage({
+              type: "success",
+              text:
+                operationMode === "TIMER"
+                  ? `Tüm rack'ler ${chargeStatus === "Charge" ? "şarja" : "deşarja"} başladı! ${durationSeconds} saniye sonra otomatik duracak.`
+                  : `Tüm rack'ler ${chargeStatus === "Charge" ? "şarja" : "deşarja"} başladı! (Sürekli mod)`,
+            });
 
-        setMessage({
-          type: "success",
-          text:
-            operationMode === "TIMER"
-              ? `Tüm rack'ler ${chargeStatus === "Charge" ? "şarja" : "deşarja"} başladı! ${durationMinutes} saniye sonra otomatik duracak.`
-              : `Tüm rack'ler ${chargeStatus === "Charge" ? "şarja" : "deşarja"} başladı! (Sürekli mod)`,
-        });
+            if (operationMode === "TIMER") {
+              startTimer(durationSeconds);
+            } else {
+              setActiveCommand({ isActive: true });
+            }
 
-        if (operationMode === "TIMER") {
-          startTimer(durationMinutes);
-        } else {
-          setActiveCommand({ isActive: true });
-        }
-
-        setTimeout(() => setMessage(null), 5000);
-        setTimeout(() => refresh(), 500);
-      } catch (err) {
-        console.log(err);
-        setMessage({ type: "error", text: "Komut gönderilemedi!" });
-        setTimeout(() => setMessage(null), 3000);
-      } finally {
-        setIsSending(false);
-      }
+            setTimeout(() => setMessage(null), 5000);
+            refreshRacks();
+          },
+          onError: () => {
+            setMessage({ type: "error", text: "Komut gönderilemedi!" });
+            setTimeout(() => setMessage(null), 3000);
+          },
+        },
+      );
     },
-    [operationMode, durationMinutes, powerKw, startTimer, refresh],
+    [
+      operationMode,
+      durationSeconds,
+      powerKw,
+      setPower,
+      startTimer,
+      refreshRacks,
+    ],
   );
 
   // Acil durdur
-  const sendStopCommand = useCallback(async () => {
-    setIsSending(true);
-    try {
-      await api.sendPowerCommand("Idle", 0, 0);
-      clearTimer();
-      setMessage({ type: "info", text: "Tüm rack'ler durduruldu!" });
-      setTimeout(() => setMessage(null), 3000);
-      setTimeout(() => refresh(), 500);
-    } catch (err) {
-      console.log(err);
-      setMessage({ type: "error", text: "Durdurma başarısız!" });
-      setTimeout(() => setMessage(null), 3000);
-    } finally {
-      setIsSending(false);
-    }
-  }, [clearTimer, refresh]);
+  const sendStopCommand = useCallback(() => {
+    setPower(
+      { chargeStatus: "Idle", powerKw: 0, durationSeconds: 0 },
+      {
+        onSuccess: () => {
+          clearTimer();
+          setActiveCommand(null);
+          setMessage({ type: "info", text: "Tüm rack'ler durduruldu!" });
+          setTimeout(() => setMessage(null), 3000);
+          refreshRacks();
+        },
+        onError: () => {
+          setMessage({ type: "error", text: "Durdurma başarısız!" });
+          setTimeout(() => setMessage(null), 3000);
+        },
+      },
+    );
+  }, [setPower, clearTimer, refreshRacks]);
 
   // Format süre
   const formatTime = (seconds: number): string => {
@@ -182,24 +197,30 @@ const App: React.FC = () => {
     return "badge-idle";
   };
 
+  // Giriş yapılmadıysa Login göster
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
   return (
     <div className="app">
-      <div className="header">
+      <LogoutButton />
+
+      {/* <div className="header">
         <h1>🔋 Battery Rack Controller</h1>
-      </div>
+      </div> */}
 
       <div className="charts-grid">
         <div className="chart-container">
           <PowerFlowAnimation flowDirection={systemStatus} />
         </div>
 
-        {/* Sağ sütun - Sistem Grafiği */}
         <div className="chart-container">
           <MultiLineChart
             data={chartData}
             title="📊 Sistem Ölçümleri"
             yAxisLabel="Değer"
-            height={350}
+            height={450}
             colors={["#3b82f6", "#f59e0b"]}
           />
         </div>
@@ -212,7 +233,7 @@ const App: React.FC = () => {
             <div>Yükleniyor...</div>
           ) : (
             <div className="rack-grid">
-              {racks.map((rack) => (
+              {racks.map((rack: Rack) => (
                 <div key={rack.id} className="rack-card">
                   <div className="rack-card-header">
                     <span className="rack-name">{rack.name}</span>
@@ -270,20 +291,22 @@ const App: React.FC = () => {
             <div className="radio-group">
               <div
                 className={`radio-option ${operationMode === "TIMER" ? "active" : ""}`}
-                onClick={() => !isSending && setOperationMode("TIMER")}
+                onClick={() => !isPowerSending && setOperationMode("TIMER")}
                 style={{
-                  cursor: isSending ? "not-allowed" : "pointer",
-                  opacity: isSending ? 0.5 : 1,
+                  cursor: isPowerSending ? "not-allowed" : "pointer",
+                  opacity: isPowerSending ? 0.5 : 1,
                 }}
               >
                 ⏱️ Timer Modu
               </div>
               <div
                 className={`radio-option ${operationMode === "CONTINUOUS" ? "active" : ""}`}
-                onClick={() => !isSending && setOperationMode("CONTINUOUS")}
+                onClick={() =>
+                  !isPowerSending && setOperationMode("CONTINUOUS")
+                }
                 style={{
-                  cursor: isSending ? "not-allowed" : "pointer",
-                  opacity: isSending ? 0.5 : 1,
+                  cursor: isPowerSending ? "not-allowed" : "pointer",
+                  opacity: isPowerSending ? 0.5 : 1,
                 }}
               >
                 🔄 Sürekli Mod
@@ -297,12 +320,12 @@ const App: React.FC = () => {
               <label>⏱️ Süre (Saniye)</label>
               <input
                 type="number"
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                value={durationSeconds}
+                onChange={(e) => setDurationSeconds(Number(e.target.value))}
                 min={1}
-                max={480}
-                step={5}
-                disabled={isSending}
+                max={28800}
+                step={30}
+                disabled={isPowerSending}
               />
               <small>Süre dolduğunda otomatik Idle'a geçer.</small>
             </div>
@@ -318,7 +341,7 @@ const App: React.FC = () => {
               min={0}
               max={500}
               step={10}
-              disabled={isSending}
+              disabled={isPowerSending}
             />
           </div>
 
@@ -363,6 +386,7 @@ const App: React.FC = () => {
               : "Sürekli modda DURDUR butonu ile durdur."}
             {isMixedStatus && " ⚠️ Rack'ler farklı durumlarda!"}
           </div>
+
           {/* Timer Göstergesi */}
           {activeCommand?.isActive &&
             activeCommand.remainingSeconds !== undefined && (
@@ -375,10 +399,17 @@ const App: React.FC = () => {
                 </div>
               </div>
             )}
+
+          {/* Admin Panel - SADECE ADMIN GÖRÜR */}
+          {isAdmin && <AdminPanel onRefresh={refreshRacks} />}
         </div>
       </div>
     </div>
   );
+};
+
+const App: React.FC = () => {
+  return <AppContent />;
 };
 
 export default App;
