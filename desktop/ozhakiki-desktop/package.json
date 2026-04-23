@@ -3,8 +3,17 @@
   "version": "1.0.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ilterisYucel/ozhakiki-rack-control.git"
+  },
+  "homepage": "https://github.com/ilterisYucel/ozhakiki-rack-control#readme",
+  "bugs": {
+    "url": "https://github.com/ilterisYucel/ozhakiki-rack-control/issues"
+  },
+  "author": "ilterisYucel",
+  "license": "MIT",
+  "private": true,
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
@@ -21,6 +30,7 @@
     "build:linux": "electron-vite build && electron-builder --linux"
   },
   "build": {
+    "publish": "never",
     "appId": "com.battery.controller",
     "productName": "Battery Rack Controller",
     "directories": {
